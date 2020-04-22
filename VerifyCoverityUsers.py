@@ -23,9 +23,9 @@ ldapBaseDN = "OU=EMPLOYEES,OU=People,OU=Root,DC=corpzone,DC=internalzone,DC=com"
 ###################################################
 # Coverity Settings
 ###################################################
-coverityURL = "Your Coverity server URL and Port"
 coverityUser = "Coverity Admin Username"
 coverityPassword = "Coverity Admin Password" # MUST be account password and NOT Authentication Key
+coverityURL = "CoverityServerNameAndPortNumber/config/usergroup/users.csv?excludeDisabled=false"
 ###################################################
 
 ###################################################
