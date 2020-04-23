@@ -9,39 +9,14 @@ import csv
 import requests
 import os.path
 from os import path
-
-###################################################
-# LDAP Settings
-###################################################
-ldapServer = "LDAP Server Name"
-ldapPort = "LDAP Port Number"
-ldapUser = "CN=Your LDAP Username"
-ldapPassword = "Your LDAP Password"
-ldapBaseDN = "OU=EMPLOYEES,OU=People,OU=Root,DC=corpzone,DC=internalzone,DC=com"
-###################################################
-
-###################################################
-# Coverity Settings
-###################################################
-coverityUser = "Coverity Admin Username"
-coverityPassword = "Coverity Admin Password" # MUST be account password and NOT Authentication Key
-coverityURL = "CoverityServerName:PortNumber" # Example: https://coverity.domain.com:8443
-###################################################
-
-###################################################
-# Files
-###################################################
-CoverityUsersFile = "CoverityUsers.txt"
-ValidCoverityUsers = "ValidCoverityUsers.txt"
-###################################################
+import configparser
 
 # Define Gobal Variables
+ConfigFileName = "VerifyCoverityUsers.cfg"
+ConfigDict = []
 FoundUserCount = 0
 MissingUserCount = 0
 ListOfUsersToEmail = []
-
-# Initalize the LDAP Connection now
-ldapConnection = ldap.initialize('ldap://' + ldapServer + ':' + ldapPort)
 
 ###################################################
 # Functions definitions
@@ -52,6 +27,10 @@ def connectToLDAPServer():
     #Bind to the server
     global ldapConnection
     print("Connecting to LDAP server [" + ldapServer + "] on port [" + ldapPort + "]...")
+
+    # Initalize the LDAP Connection now
+    ldapConnection = ldap.initialize('ldap://' + ldapServer + ':' + ldapPort)
+
     try:
         ldapConnection.protocol_version = ldap.VERSION3
         ldapConnection.simple_bind_s(ldapUser, ldapPassword) 
@@ -165,6 +144,67 @@ def CreateBackupFiles():
     if (path.exists(ValidCoverityUsers)):
         os.rename(ValidCoverityUsers, ValidCoverityUsers + ".bak")
 
+def ReadStrFromConfigFile(configfile, section, option):
+    """Method used to read a string value from a config file and return the string"""
+    print("   * Reading section [" + section + "] and option [" + option + "] from config file [" + configfile + "] ...")
+    config = configparser.RawConfigParser()
+    config.read(configfile)
+    if (config.has_option(section, option)):
+        return config.get(section, option, raw=True)
+    else:
+        print("FAILURE: Either the section specified or the option specified was NOT found in config file so fail.")
+        sys.exit(1)
+
+def LoadConfigurationInfo():
+    """Method used to load the configuration settings from the ConfigFileName file."""
+    global ldapServer
+    global ldapPort
+    global ldapUser
+    global ldapPassword
+    global ldapBaseDN
+    global coverityURL
+    global coverityUser
+    global coverityPassword
+    global CoverityUsersFile
+    global ValidCoverityUsers
+    if (path.exists(ConfigFileName)):
+        print("Configuration file found so loading configuration...")
+
+        ldapServer = ReadStrFromConfigFile(ConfigFileName, 'LDAP Settings', 'ldapServer')
+        print ("      * LDAP Server set to : " + ldapServer)
+
+        ldapPort = ReadStrFromConfigFile(ConfigFileName, 'LDAP Settings', 'ldapPort')
+        print ("      * LDAP Port set to : " + ldapPort)
+
+        ldapUser = ReadStrFromConfigFile(ConfigFileName, 'LDAP Settings', 'ldapUser')
+        print ("      * LDAP User set to : " + ldapUser)
+
+        ldapPassword = ReadStrFromConfigFile(ConfigFileName, 'LDAP Settings', 'ldapPassword')
+        print ("      * LDAP Password set to : " + ldapPassword)
+
+        ldapBaseDN = ReadStrFromConfigFile(ConfigFileName, 'LDAP Settings', 'ldapBaseDN')
+        print ("      * LDAP BaseDN set to : " + ldapBaseDN)
+
+        coverityURL = ReadStrFromConfigFile(ConfigFileName, 'Coverity Settings', 'coverityURL')
+        print ("      * Coverity URL set to : " + coverityURL)
+
+        coverityUser = ReadStrFromConfigFile(ConfigFileName, 'Coverity Settings', 'coverityUser')
+        print ("      * Coverity Username set to : " + coverityUser)
+
+        coverityPassword = ReadStrFromConfigFile(ConfigFileName, 'Coverity Settings', 'coverityPassword')
+        print ("      * Coverity Password set to : " + coverityPassword)
+
+        CoverityUsersFile = ReadStrFromConfigFile(ConfigFileName, 'Output Files', 'CoverityUsersFile')
+        print ("      * Coverity Users Filename set to : " + CoverityUsersFile)
+
+        ValidCoverityUsers = ReadStrFromConfigFile(ConfigFileName, 'Output Files', 'ValidCoverityUsers')
+        print ("      * Valid Coverity Users Filename set to : " + ValidCoverityUsers)
+
+        print ("Doen Loading Configuration Settings")
+
+    else:
+        print("FAILURE: Configuration file NOT found so failing")
+        sys.exit(1)
 
 
 ###################################################
@@ -172,6 +212,9 @@ def CreateBackupFiles():
 ###################################################
 print ('Number of arguments:', len(sys.argv), 'arguments.')
 print ('Argument List:', str(sys.argv))
+
+# First Load up the configuration
+LoadConfigurationInfo()
 
 # Make sure both files are not present before we continue
 CreateBackupFiles()
