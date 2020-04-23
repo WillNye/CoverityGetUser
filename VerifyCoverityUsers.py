@@ -25,7 +25,7 @@ ldapBaseDN = "OU=EMPLOYEES,OU=People,OU=Root,DC=corpzone,DC=internalzone,DC=com"
 ###################################################
 coverityUser = "Coverity Admin Username"
 coverityPassword = "Coverity Admin Password" # MUST be account password and NOT Authentication Key
-coverityURL = "CoverityServerNameAndPortNumber/config/usergroup/users.csv?excludeDisabled=false"
+coverityURL = "CoverityServerName:PortNumber" # Example: https://coverity.domain.com:8443
 ###################################################
 
 ###################################################
@@ -48,6 +48,7 @@ ldapConnection = ldap.initialize('ldap://' + ldapServer + ':' + ldapPort)
 ###################################################
 
 def connectToLDAPServer():
+    """Method used to connect to the LDAP server."""
     #Bind to the server
     global ldapConnection
     print("Connecting to LDAP server [" + ldapServer + "] on port [" + ldapPort + "]...")
@@ -66,6 +67,7 @@ def connectToLDAPServer():
 
 
 def disconnectFromLDAPServer():
+    """Method used to disconnect from the LDAP server."""
     print("Disconnecting from LDAP server [" + ldapServer + "] on port [" + ldapPort + "]...")
     # Unbind from LDAP now that we are done.
     global ldapConnection
@@ -73,6 +75,7 @@ def disconnectFromLDAPServer():
 
 
 def findUserInLDAP(emailAddress):
+    """Method used to find a user in LDAP based on their mail attribute (Email Address)."""
     global ldapConnection
     print("   Searching LDAP for user with email address of :" + emailAddress)
 
@@ -103,6 +106,7 @@ def findUserInLDAP(emailAddress):
 
 
 def SearchForUsers(UserToFind):
+    """Method used to Search for the various users and act upon what it finds."""
     if (UserToFind != ""):
         if(findUserInLDAP(UserToFind) is True):
             print ("   User [" + UserToFind + "] was found.")
@@ -119,8 +123,15 @@ def SearchForUsers(UserToFind):
 
 
 def ReadCoverityUsersFromWebsite():
-    print ("   Reading Coverity user list from webiste...")
-    result = requests.get(coverityURL, auth=(coverityUser, coverityPassword))
+    """Method used to connect to the Coverity server and read the list of users and write to a file."""
+    siteToUse = coverityURL
+    if (siteToUse.endswith("/")):
+        siteToUse += "config/usergroup/users.csv?excludeDisabled=false"
+    else:
+        siteToUse += "/config/usergroup/users.csv?excludeDisabled=false"
+
+    print ("   Reading Coverity user list following webiste: " + siteToUse)
+    result = requests.get(siteToUse, auth=(coverityUser, coverityPassword))
     with open(CoverityUsersFile, mode='w') as f:
         f.write(result.text)
 
@@ -131,12 +142,14 @@ def ReadCoverityUsersFromWebsite():
 
 
 def WriteValidUsersToFile():
+    """Method used to Write the valid users (still in LDAP) to a file."""
     print("Writing valid users to file: " + ValidCoverityUsers)
     with open(ValidCoverityUsers, mode='w') as f:
         for user in ListOfUsersToEmail:
             f.write("%s\n" % user)
 
 def CreateBackupFiles():
+    """Method used to create a backup of the two output files."""
     print ("Creating BAK files...")
     # Remove BAK files first
     if (path.exists(CoverityUsersFile + ".bak")):
