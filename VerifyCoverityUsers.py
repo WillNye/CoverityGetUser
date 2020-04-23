@@ -1,7 +1,11 @@
-"""This Python app will contact the specified Coverity server with the Credentials provided
-and download a list of users and then contact the specified LDAP server and verify that the 
-users still exist in LDAP.  Finally it will dump all valid users email addresses to a text 
-file so that you can email them. """
+"""
+This Python app will contact the specified Coverity server with the Credentials provided
+and download a list of userr.  It will then contact the specified LDAP server and verify the 
+users still exist in LDAP.  Finally it will dump all valid user email addresses to a text 
+file so that you can email them.
+
+See the included configuration (cfg) file for settings needed for app to work properly.
+"""
 # Load the required imports
 import sys
 import ldap
@@ -213,12 +217,13 @@ def LoadConfigurationInfo():
 print ('Number of arguments:', len(sys.argv), 'arguments.')
 print ('Argument List:', str(sys.argv))
 
-# First Load up the configuration
+# Load up the configuration (MUST BE First)
 LoadConfigurationInfo()
 
 # Make sure both files are not present before we continue
 CreateBackupFiles()
 
+# Connect to LDAP server and verify the Coverity users with it
 connectToLDAPServer()
 ReadCoverityUsersFromWebsite()
 disconnectFromLDAPServer()
