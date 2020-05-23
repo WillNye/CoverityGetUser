@@ -113,8 +113,8 @@ def ReadCoverityUsersFromWebsite():
     else:
         siteToUse += "/config/usergroup/users.csv?excludeDisabled=false"
 
-    print ("   Reading Coverity user list following webiste: " + siteToUse)
-    result = requests.get(siteToUse, auth=(coverityUser, coverityPassword))
+    print ("   Reading Coverity user list from following webiste: " + siteToUse)
+    result = requests.get(siteToUse, auth=(coverityUser, coverityPassword), verify=coverityPEMFile)
     with open(CoverityUsersFile, mode='w') as f:
         f.write(result.text)
 
@@ -169,6 +169,7 @@ def LoadConfigurationInfo():
     global coverityURL
     global coverityUser
     global coverityPassword
+    global coverityPEMFile
     global CoverityUsersFile
     global ValidCoverityUsers
     if (path.exists(ConfigFileName)):
@@ -197,6 +198,9 @@ def LoadConfigurationInfo():
 
         coverityPassword = ReadStrFromConfigFile(ConfigFileName, 'Coverity Settings', 'coverityPassword')
         print ("      * Coverity Password set to : " + coverityPassword)
+
+        coverityPEMFile = ReadStrFromConfigFile(ConfigFileName, 'Coverity Settings', 'coverityPEMFile')
+        print ("      * Coverity PEM File set to : " + coverityPEMFile)
 
         CoverityUsersFile = ReadStrFromConfigFile(ConfigFileName, 'Output Files', 'CoverityUsersFile')
         print ("      * Coverity Users Filename set to : " + CoverityUsersFile)
