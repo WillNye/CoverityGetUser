@@ -21,6 +21,7 @@ ConfigDict = []
 FoundUserCount = 0
 MissingUserCount = 0
 ListOfUsersToEmail = []
+ListOfUsersNOTFound = []
 
 ###################################################
 # Functions definitions
@@ -88,7 +89,7 @@ def findUserInLDAP(emailAddress):
         sys.exit(1)
 
 
-def SearchForUsers(UserToFind):
+def SearchForUsers(Username, UserToFind):
     """Method used to Search for the various users and act upon what it finds."""
     if (UserToFind != ""):
         if(findUserInLDAP(UserToFind) is True):
@@ -98,9 +99,11 @@ def SearchForUsers(UserToFind):
             global ListOfUsersToEmail
             ListOfUsersToEmail.append(UserToFind)
         else:
-            print ("   User [" + UserToFind + "] was NOT found.")
+            print ("   WARNING: User [" + UserToFind + "] was NOT found.")
             global MissingUserCount
             MissingUserCount += 1
+            global ListOfUsersNOTFound
+            ListOfUsersNOTFound.append(Username + ": " + UserToFind)
     else:
         print("   Skipping blank user")
 
@@ -121,7 +124,7 @@ def ReadCoverityUsersFromWebsite():
     print ("   Reading Coverity user list from file...")
     with open(CoverityUsersFile, mode='r') as infile:
         reader = csv.reader(infile)
-        {SearchForUsers(rows[3]) for rows in reader}
+        {SearchForUsers(rows[0], rows[3]) for rows in reader}
 
 
 def WriteValidUsersToFile():
@@ -129,6 +132,13 @@ def WriteValidUsersToFile():
     print("Writing valid users to file: " + ValidCoverityUsers)
     with open(ValidCoverityUsers, mode='w') as f:
         for user in ListOfUsersToEmail:
+            f.write("%s\n" % user)
+
+def WriteInvalidUsersToFile():
+    """Method used to Write the valid users (still in LDAP) to a file."""
+    print("Writing Invalid users to file: " + NonValidCoverityUsers)
+    with open(NonValidCoverityUsers, mode='w') as f:
+        for user in ListOfUsersNOTFound:
             f.write("%s\n" % user)
 
 def CreateBackupFiles():
@@ -141,12 +151,18 @@ def CreateBackupFiles():
     if (path.exists(ValidCoverityUsers + ".bak")):
         os.remove(ValidCoverityUsers + ".bak")
 
+    if (path.exists(NonValidCoverityUsers + ".bak")):
+        os.remove(NonValidCoverityUsers + ".bak")
+
     # Create the BAK files
     if (path.exists(CoverityUsersFile)):
         os.rename(CoverityUsersFile, CoverityUsersFile + ".bak")
 
     if (path.exists(ValidCoverityUsers)):
         os.rename(ValidCoverityUsers, ValidCoverityUsers + ".bak")
+
+    if (path.exists(NonValidCoverityUsers)):
+        os.rename(NonValidCoverityUsers, NonValidCoverityUsers + ".bak")
 
 def ReadStrFromConfigFile(configfile, section, option):
     """Method used to read a string value from a config file and return the string"""
@@ -172,6 +188,7 @@ def LoadConfigurationInfo():
     global coverityPEMFile
     global CoverityUsersFile
     global ValidCoverityUsers
+    global NonValidCoverityUsers
     if (path.exists(ConfigFileName)):
         print("Configuration file found so loading configuration...")
 
@@ -208,6 +225,9 @@ def LoadConfigurationInfo():
         ValidCoverityUsers = ReadStrFromConfigFile(ConfigFileName, 'Output Files', 'ValidCoverityUsers')
         print ("      * Valid Coverity Users Filename set to : " + ValidCoverityUsers)
 
+        NonValidCoverityUsers = ReadStrFromConfigFile(ConfigFileName, 'Output Files', 'NonValidCoverityUsers')
+        print ("      * Valid Coverity Users Filename set to : " + NonValidCoverityUsers)
+
         print ("Doen Loading Configuration Settings")
 
     else:
@@ -232,6 +252,7 @@ connectToLDAPServer()
 ReadCoverityUsersFromWebsite()
 disconnectFromLDAPServer()
 WriteValidUsersToFile()
+WriteInvalidUsersToFile()
 
 print ("Found user count   : " + str(FoundUserCount))
 print ("Missing user count : " + str(MissingUserCount))
